@@ -1,0 +1,195 @@
+:root {
+    --mscell-navy: #0f172a;
+    --mscell-navy-light: #1c2b45;
+    --mscell-accent: #22c55e;
+    --mscell-accent-dark: #16a34a;
+    --mscell-accent-soft: rgba(34, 197, 94, .14);
+    --mscell-bg: #f1f5f9;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--mscell-bg);
+}
+
+a {
+    text-decoration: none;
+}
+
+/* ---------- Sidebar ---------- */
+
+.mscell-sidebar {
+    background-color: var(--mscell-navy);
+    min-height: 100vh;
+    color: #e2e8f0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.brand-row {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+
+.brand-logo {
+    height: 36px;
+    width: auto;
+    filter: drop-shadow(0 0 6px rgba(34, 197, 94, .35));
+}
+
+.brand-wordmark {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: .3px;
+}
+
+.mscell-sidebar .nav-link {
+    color: #cbd5e1;
+    border-radius: .5rem;
+    margin-bottom: 2px;
+    padding: .55rem .75rem;
+    font-size: .93rem;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.mscell-sidebar .nav-link:hover {
+    background-color: var(--mscell-navy-light);
+    color: #fff;
+}
+
+.mscell-sidebar .nav-link.active {
+    background-color: var(--mscell-accent-soft);
+    color: #fff;
+    font-weight: 600;
+    border-left: 3px solid var(--mscell-accent);
+    padding-left: calc(.75rem - 3px);
+}
+
+/* ---------- Botões ---------- */
+
+.btn-mscell {
+    background-color: var(--mscell-accent);
+    border-color: var(--mscell-accent-dark);
+    color: #fff;
+    font-weight: 500;
+}
+
+.btn-mscell:hover,
+.btn-mscell:focus {
+    background-color: var(--mscell-accent-dark);
+    border-color: var(--mscell-accent-dark);
+    color: #fff;
+}
+
+.btn,
+.form-control,
+.form-select {
+    transition: box-shadow .15s ease, border-color .15s ease, background-color .15s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--mscell-accent);
+    box-shadow: 0 0 0 .2rem var(--mscell-accent-soft);
+}
+
+/* ---------- Cartões / tabelas ---------- */
+
+.card-stat {
+    border: none;
+    border-radius: .85rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .08);
+    overflow-x: auto;
+}
+
+.card-stat .stat-value {
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: var(--mscell-navy);
+}
+
+.card-stat h5 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--mscell-navy);
+    margin-bottom: .9rem;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table > thead > tr > th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #64748b;
+    border-bottom-width: 1px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.table > tbody > tr {
+    transition: background-color .1s ease;
+}
+
+.table-hover > tbody > tr:hover,
+.table > tbody > tr:hover {
+    background-color: #f8fafc;
+}
+
+/* ---------- Login ---------- */
+
+.login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background:
+        radial-gradient(circle at 50% 15%, rgba(34, 197, 94, .18), transparent 55%),
+        linear-gradient(135deg, var(--mscell-navy) 0%, var(--mscell-navy-light) 100%);
+}
+
+.login-box {
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+}
+
+.login-logo {
+    height: 96px;
+    width: auto;
+    filter: drop-shadow(0 0 28px rgba(34, 197, 94, .45));
+    margin-bottom: .5rem;
+}
+
+.login-tagline {
+    color: #cbd5e1;
+    font-size: .92rem;
+    margin-bottom: 1.5rem;
+}
+
+.login-card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, .35);
+    text-align: left;
+}
+
+/* ---------- Badges ---------- */
+
+.badge-baixo-estoque {
+    background-color: #f59e0b;
+}
+
+.badge-origem-whatsapp {
+    background-color: var(--mscell-accent);
+}
