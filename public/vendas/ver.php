@@ -11,12 +11,19 @@ AuthService::exigirLogin();
 $id = (int) ($_GET['id'] ?? 0);
 $venda = Venda::buscarPorId($id, AuthService::lojaEfetiva());
 
+// Funcionario so pode ver a propria venda, mesmo sabendo o ID de outra.
+$souFuncionario = AuthService::papelAtual() === 'funcionario';
+if ($venda && $souFuncionario && (int) $venda['usuario_id'] !== AuthService::idAtual()) {
+    $venda = null;
+}
+
 if (!$venda) {
     header('Location: /vendas/index.php');
     exit;
 }
 
 $itens = Venda::itens($id);
+$souAdmin = AuthService::papelAtual() === 'admin';
 
 $tituloPagina = 'Venda #' . $id;
 $paginaAtual = 'vendas';
@@ -30,6 +37,9 @@ require __DIR__ . '/../partials/layout_start.php';
         <dt class="col-sm-3">Data</dt><dd class="col-sm-9"><?= Formatador::data($venda['criado_em']) ?></dd>
         <dt class="col-sm-3">Cliente</dt><dd class="col-sm-9"><?= htmlspecialchars($venda['cliente_nome'] ?: '—') ?></dd>
         <dt class="col-sm-3">Vendedor</dt><dd class="col-sm-9"><?= htmlspecialchars($venda['usuario_nome'] ?? '—') ?></dd>
+        <?php if ($souAdmin && !empty($venda['registrado_por_nome'])): ?>
+        <dt class="col-sm-3">Lançado por</dt><dd class="col-sm-9"><?= htmlspecialchars($venda['registrado_por_nome']) ?></dd>
+        <?php endif; ?>
         <dt class="col-sm-3">Pagamento</dt><dd class="col-sm-9"><?= htmlspecialchars(ucfirst($venda['forma_pagamento'])) ?></dd>
         <dt class="col-sm-3">Origem</dt><dd class="col-sm-9"><?= $venda['origem'] === 'whatsapp' ? 'WhatsApp (automático)' : 'Sistema' ?></dd>
         <dt class="col-sm-3">Total</dt><dd class="col-sm-9"><strong><?= Formatador::moeda((float) $venda['valor_total']) ?></strong></dd>

@@ -22,7 +22,8 @@ class VendaService
         string $formaPagamento,
         ?string $clienteNome,
         ?int $usuarioId,
-        string $origem = 'sistema'
+        string $origem = 'sistema',
+        ?int $registradoPorId = null
     ): int {
         if (empty($itens)) {
             throw new RuntimeException('A venda precisa ter pelo menos um item.');
@@ -69,10 +70,10 @@ class VendaService
             }
 
             $stmt = $pdo->prepare(
-                'INSERT INTO vendas (loja_id, usuario_id, cliente_nome, forma_pagamento, valor_total, origem)
-                 VALUES (?, ?, ?, ?, ?, ?)'
+                'INSERT INTO vendas (loja_id, usuario_id, registrado_por_id, cliente_nome, forma_pagamento, valor_total, origem)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
             );
-            $stmt->execute([$lojaId, $usuarioId, $clienteNome ?: null, $formaPagamento, round($valorTotal, 2), $origem]);
+            $stmt->execute([$lojaId, $usuarioId, $registradoPorId, $clienteNome ?: null, $formaPagamento, round($valorTotal, 2), $origem]);
             $vendaId = (int) $pdo->lastInsertId();
 
             $stmtItem = $pdo->prepare(
@@ -97,7 +98,7 @@ class VendaService
                     $resolvido['quantidade'],
                     $origem === 'whatsapp' ? 'Venda automatica via WhatsApp' : 'Venda registrada no sistema',
                     $vendaId,
-                    $usuarioId
+                    $registradoPorId ?? $usuarioId
                 );
             }
 

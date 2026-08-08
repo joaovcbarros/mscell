@@ -193,3 +193,19 @@ a {
 .badge-origem-whatsapp {
     background-color: var(--mscell-accent);
 }
+
+.badge-meta-batida {
+    background-color: var(--mscell-accent);
+}
+
+/* ---------- Impressão (relatórios) ---------- */
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        background: #fff;
+    }
+}

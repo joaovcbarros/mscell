@@ -9,9 +9,10 @@ $paginaAtual = $paginaAtual ?? '';
 $itensMenu = [
     ['chave' => 'dashboard', 'href' => '/dashboard.php', 'label' => 'Dashboard', 'papeis' => ['admin', 'funcionario', 'usuario']],
     ['chave' => 'produtos', 'href' => '/produtos/index.php', 'label' => 'Produtos', 'papeis' => ['admin', 'funcionario', 'usuario']],
-    ['chave' => 'vendas', 'href' => '/vendas/index.php', 'label' => 'Vendas', 'papeis' => ['admin', 'funcionario', 'usuario']],
+    ['chave' => 'vendas', 'href' => '/vendas/index.php', 'label' => $papelAtual === 'funcionario' ? 'Minhas Vendas' : 'Vendas', 'papeis' => ['admin', 'funcionario', 'usuario']],
     ['chave' => 'estoque', 'href' => '/estoque/index.php', 'label' => 'Estoque', 'papeis' => ['admin', 'funcionario', 'usuario']],
     ['chave' => 'whatsapp', 'href' => '/whatsapp/index.php', 'label' => 'Mensagens WhatsApp', 'papeis' => ['admin', 'funcionario']],
+    ['chave' => 'bonificacao', 'href' => '/bonificacao/index.php', 'label' => 'Bonificação', 'papeis' => ['admin']],
     ['chave' => 'lojas', 'href' => '/lojas/index.php', 'label' => 'Lojas', 'papeis' => ['admin']],
     ['chave' => 'usuarios', 'href' => '/usuarios/index.php', 'label' => 'Usuários', 'papeis' => ['admin']],
 ];

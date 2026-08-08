@@ -36,6 +36,7 @@ CREATE TABLE usuarios (
     senha_hash      VARCHAR(255) NOT NULL,
     papel           ENUM('admin', 'funcionario', 'usuario') NOT NULL DEFAULT 'usuario',
     loja_id         INT UNSIGNED NULL,
+    salario_base    DECIMAL(10,2) NULL,
     ativo           TINYINT(1) NOT NULL DEFAULT 1,
     criado_em       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     atualizado_em   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -82,18 +83,26 @@ CREATE TABLE produtos (
 -- ---------------------------------------------------------------------
 -- vendas: cabeçalho de cada venda (manual ou via WhatsApp), sempre
 -- vinculada a loja onde ocorreu.
+-- usuario_id: o VENDEDOR (quem recebe o credito da venda — usado no
+-- dashboard e na bonificacao). registrado_por_id: quem estava logado e
+-- de fato lancou a venda no sistema — pode ser outra pessoa (ex: admin
+-- lanca uma venda em nome de um funcionario). Ambos ficam NULL em
+-- vendas de origem WhatsApp (ninguem logado envolvido).
 -- ---------------------------------------------------------------------
 CREATE TABLE vendas (
-    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    loja_id         INT UNSIGNED NOT NULL,
-    usuario_id      INT UNSIGNED NULL,
-    cliente_nome    VARCHAR(150) NULL,
-    forma_pagamento ENUM('dinheiro', 'pix', 'debito', 'credito', 'outro') NOT NULL DEFAULT 'outro',
-    valor_total     DECIMAL(10,2) NOT NULL DEFAULT 0,
-    origem          ENUM('sistema', 'whatsapp') NOT NULL DEFAULT 'sistema',
-    status          ENUM('concluida', 'cancelada') NOT NULL DEFAULT 'concluida',
-    criado_em       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    loja_id            INT UNSIGNED NOT NULL,
+    usuario_id         INT UNSIGNED NULL,
+    registrado_por_id  INT UNSIGNED NULL,
+    cliente_nome       VARCHAR(150) NULL,
+    forma_pagamento    ENUM('dinheiro', 'pix', 'debito', 'credito', 'outro') NOT NULL DEFAULT 'outro',
+    valor_total        DECIMAL(10,2) NOT NULL DEFAULT 0,
+    origem             ENUM('sistema', 'whatsapp') NOT NULL DEFAULT 'sistema',
+    status             ENUM('concluida', 'cancelada') NOT NULL DEFAULT 'concluida',
+    criado_em          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_vendas_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_vendas_registrado_por FOREIGN KEY (registrado_por_id) REFERENCES usuarios(id)
         ON DELETE SET NULL,
     CONSTRAINT fk_vendas_loja FOREIGN KEY (loja_id) REFERENCES lojas(id),
     INDEX idx_vendas_criado_em (criado_em),
@@ -173,4 +182,51 @@ CREATE TABLE whatsapp_pendencias (
     expira_em       DATETIME NOT NULL,
     CONSTRAINT fk_wpp_pend_loja FOREIGN KEY (loja_id) REFERENCES lojas(id),
     INDEX idx_pendencias_numero_status (numero_origem, status)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- metas_bonificacao: metas de bonificacao definidas pelo admin por
+-- funcionario/periodo (competencia). quantidade_vendas_min e
+-- valor_minimo sao opcionais (pode definir so um dos dois, ou os dois
+-- — nesse caso AMBOS precisam ser batidos). Quando ha produtos
+-- vinculados (tabela metas_bonificacao_produtos), quantidade/valor
+-- contam SOMENTE vendas desses produtos; sem produtos vinculados,
+-- conta tudo que o funcionario vendeu no periodo.
+--
+-- Ciclo de vida: 'ativa' (competencia corrente, progresso calculado ao
+-- vivo) -> 'processada' (fechada pelo admin; os campos abaixo ficam
+-- congelados com o resultado daquele momento, nao mudam mais mesmo que
+-- vendas sejam editadas depois). Processar uma meta ativa cria
+-- automaticamente a meta 'ativa' do mes seguinte.
+-- ---------------------------------------------------------------------
+CREATE TABLE metas_bonificacao (
+    id                          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    usuario_id                  INT UNSIGNED NOT NULL,
+    data_inicio                 DATE NOT NULL,
+    data_fim                    DATE NOT NULL,
+    quantidade_vendas_min       INT UNSIGNED NULL,
+    valor_minimo                DECIMAL(10,2) NULL,
+    percentual_bonus            DECIMAL(5,2) NOT NULL,
+    status                      ENUM('ativa', 'processada') NOT NULL DEFAULT 'ativa',
+    processada_em                DATETIME NULL,
+    meta_batida                 TINYINT(1) NULL,
+    percentual_alcancado        DECIMAL(5,2) NULL COMMENT '0-100, quanto chegou perto da meta',
+    quantidade_alcancada        INT NULL,
+    valor_alcancado             DECIMAL(10,2) NULL,
+    salario_base_registrado     DECIMAL(10,2) NULL,
+    valor_bonus                 DECIMAL(10,2) NULL,
+    valor_total_pago            DECIMAL(10,2) NULL,
+    criado_em                   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_meta_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- metas_bonificacao_produtos: produtos-alvo de uma meta (opcional).
+-- ---------------------------------------------------------------------
+CREATE TABLE metas_bonificacao_produtos (
+    meta_id     INT UNSIGNED NOT NULL,
+    produto_id  INT UNSIGNED NOT NULL,
+    PRIMARY KEY (meta_id, produto_id),
+    CONSTRAINT fk_metaprod_meta FOREIGN KEY (meta_id) REFERENCES metas_bonificacao(id) ON DELETE CASCADE,
+    CONSTRAINT fk_metaprod_produto FOREIGN KEY (produto_id) REFERENCES produtos(id)
 ) ENGINE=InnoDB;

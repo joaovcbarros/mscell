@@ -20,6 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lojaId = $papel === Usuario::PAPEL_ADMIN
         ? null
         : (!empty($_POST['loja_id']) ? (int) $_POST['loja_id'] : null);
+    $salarioBase = trim($_POST['salario_base'] ?? '') !== ''
+        ? (float) str_replace(',', '.', $_POST['salario_base'])
+        : null;
 
     if ($nome === '') {
         $erros[] = 'Nome é obrigatório.';
@@ -39,19 +42,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($erros)) {
         if ($id) {
-            Usuario::atualizar($id, $nome, $email, $papel, $lojaId);
+            Usuario::atualizar($id, $nome, $email, $papel, $lojaId, $salarioBase);
             if ($senha !== '') {
                 Usuario::redefinirSenha($id, $senha);
             }
         } else {
-            Usuario::criar($nome, $email, $senha, $papel, $lojaId);
+            Usuario::criar($nome, $email, $senha, $papel, $lojaId, $salarioBase);
         }
 
         header('Location: /usuarios/index.php?sucesso=1');
         exit;
     }
 
-    $usuario = ['nome' => $nome, 'email' => $email, 'papel' => $papel, 'loja_id' => $lojaId];
+    $usuario = ['nome' => $nome, 'email' => $email, 'papel' => $papel, 'loja_id' => $lojaId, 'salario_base' => $salarioBase];
 }
 
 $lojas = Loja::todas(true);
@@ -99,6 +102,12 @@ require __DIR__ . '/../partials/layout_start.php';
             </select>
             <div class="form-text">Obrigatório para funcionário/usuário. Admin enxerga todas as lojas, não precisa escolher.</div>
         </div>
+        <div class="mb-3" id="grupo-salario">
+            <label class="form-label">Salário base (opcional)</label>
+            <input type="text" name="salario_base" class="form-control" placeholder="ex: 1800,00"
+                   value="<?= htmlspecialchars((string) ($usuario['salario_base'] ?? '')) ?>">
+            <div class="form-text">Usado no cálculo do módulo de Bonificação.</div>
+        </div>
         <div class="mb-3">
             <label class="form-label"><?= $id ? 'Nova senha (deixe em branco para manter)' : 'Senha' ?></label>
             <input type="password" name="senha" class="form-control" <?= $id ? '' : 'required minlength="6"' ?>>
@@ -110,8 +119,9 @@ require __DIR__ . '/../partials/layout_start.php';
 <script>
 function atualizarCampoLoja() {
     const papel = document.getElementById('campo-papel').value;
-    const grupo = document.getElementById('grupo-loja');
-    grupo.style.display = papel === 'admin' ? 'none' : '';
+    const ehAdmin = papel === 'admin';
+    document.getElementById('grupo-loja').style.display = ehAdmin ? 'none' : '';
+    document.getElementById('grupo-salario').style.display = ehAdmin ? 'none' : '';
 }
 document.getElementById('campo-papel').addEventListener('change', atualizarCampoLoja);
 atualizarCampoLoja();

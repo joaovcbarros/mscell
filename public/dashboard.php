@@ -13,11 +13,16 @@ AuthService::exigirLogin();
 $lojaEfetiva = AuthService::lojaEfetiva();
 $mostrarColunaLoja = $lojaEfetiva === null;
 
-$resumoDia = Venda::resumoDoDia($lojaEfetiva);
-$resumoMes = Venda::resumoDoMes($lojaEfetiva);
+// Funcionario ve so os proprios numeros no dashboard, nao o faturamento
+// da loja inteira (isso fica restrito a admin/usuario de consulta).
+$souFuncionario = AuthService::papelAtual() === 'funcionario';
+$usuarioFiltro = $souFuncionario ? AuthService::idAtual() : null;
+
+$resumoDia = Venda::resumoDoDia($lojaEfetiva, $usuarioFiltro);
+$resumoMes = Venda::resumoDoMes($lojaEfetiva, $usuarioFiltro);
 $resumoPorLoja = $mostrarColunaLoja ? Venda::resumoDoDiaPorLoja() : [];
 $estoqueBaixo = Produto::comEstoqueBaixo($lojaEfetiva);
-$vendasRecentes = Venda::recentes(8, $lojaEfetiva);
+$vendasRecentes = Venda::recentes(8, $lojaEfetiva, $usuarioFiltro);
 $mensagensPendentes = in_array(AuthService::papelAtual(), ['admin', 'funcionario'], true)
     ? MensagemWhatsapp::pendentesDeRevisao($lojaEfetiva)
     : [];
@@ -32,25 +37,25 @@ require __DIR__ . '/partials/layout_start.php';
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="card card-stat p-3">
-            <div class="text-muted small">Vendas hoje</div>
+            <div class="text-muted small"><?= $souFuncionario ? 'Minhas vendas hoje' : 'Vendas hoje' ?></div>
             <div class="stat-value"><?= (int) $resumoDia['total_vendas'] ?></div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card card-stat p-3">
-            <div class="text-muted small">Faturado hoje</div>
+            <div class="text-muted small"><?= $souFuncionario ? 'Meu faturamento hoje' : 'Faturado hoje' ?></div>
             <div class="stat-value"><?= Formatador::moeda((float) $resumoDia['total_valor']) ?></div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card card-stat p-3">
-            <div class="text-muted small">Vendas no mês</div>
+            <div class="text-muted small"><?= $souFuncionario ? 'Minhas vendas no mês' : 'Vendas no mês' ?></div>
             <div class="stat-value"><?= (int) $resumoMes['total_vendas'] ?></div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card card-stat p-3">
-            <div class="text-muted small">Faturado no mês</div>
+            <div class="text-muted small"><?= $souFuncionario ? 'Meu faturamento no mês' : 'Faturado no mês' ?></div>
             <div class="stat-value"><?= Formatador::moeda((float) $resumoMes['total_valor']) ?></div>
         </div>
     </div>
@@ -77,7 +82,7 @@ require __DIR__ . '/partials/layout_start.php';
 <div class="row g-3">
     <div class="col-md-7">
         <div class="card card-stat p-3">
-            <h5>Últimas vendas</h5>
+            <h5><?= $souFuncionario ? 'Minhas vendas recentes' : 'Últimas vendas' ?></h5>
             <?php if (empty($vendasRecentes)): ?>
                 <p class="text-muted">Nenhuma venda registrada ainda.</p>
             <?php else: ?>

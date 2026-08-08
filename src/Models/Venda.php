@@ -8,9 +8,10 @@ class Venda
 {
     public static function todas(array $filtros = [], ?int $lojaId = null): array
     {
-        $sql = 'SELECT v.*, u.nome AS usuario_nome, l.nome AS loja_nome
+        $sql = 'SELECT v.*, u.nome AS usuario_nome, r.nome AS registrado_por_nome, l.nome AS loja_nome
                 FROM vendas v
                 LEFT JOIN usuarios u ON u.id = v.usuario_id
+                LEFT JOIN usuarios r ON r.id = v.registrado_por_id
                 LEFT JOIN lojas l ON l.id = v.loja_id
                 WHERE 1=1';
         $params = [];
@@ -50,9 +51,10 @@ class Venda
 
     public static function buscarPorId(int $id, ?int $lojaId = null): ?array
     {
-        $sql = 'SELECT v.*, u.nome AS usuario_nome, l.nome AS loja_nome
+        $sql = 'SELECT v.*, u.nome AS usuario_nome, r.nome AS registrado_por_nome, l.nome AS loja_nome
                 FROM vendas v
                 LEFT JOIN usuarios u ON u.id = v.usuario_id
+                LEFT JOIN usuarios r ON r.id = v.registrado_por_id
                 LEFT JOIN lojas l ON l.id = v.loja_id
                 WHERE v.id = ?';
         $params = [$id];
@@ -80,7 +82,7 @@ class Venda
         return $stmt->fetchAll();
     }
 
-    public static function resumoDoDia(?int $lojaId = null): array
+    public static function resumoDoDia(?int $lojaId = null, ?int $usuarioId = null): array
     {
         $sql = "SELECT COUNT(*) AS total_vendas, COALESCE(SUM(valor_total), 0) AS total_valor
                 FROM vendas
@@ -92,13 +94,18 @@ class Venda
             $params[] = $lojaId;
         }
 
+        if ($usuarioId !== null) {
+            $sql .= ' AND usuario_id = ?';
+            $params[] = $usuarioId;
+        }
+
         $stmt = Database::getConnection()->prepare($sql);
         $stmt->execute($params);
 
         return $stmt->fetch();
     }
 
-    public static function resumoDoMes(?int $lojaId = null): array
+    public static function resumoDoMes(?int $lojaId = null, ?int $usuarioId = null): array
     {
         $sql = "SELECT COUNT(*) AS total_vendas, COALESCE(SUM(valor_total), 0) AS total_valor
                 FROM vendas
@@ -109,6 +116,11 @@ class Venda
         if ($lojaId !== null) {
             $sql .= ' AND loja_id = ?';
             $params[] = $lojaId;
+        }
+
+        if ($usuarioId !== null) {
+            $sql .= ' AND usuario_id = ?';
+            $params[] = $usuarioId;
         }
 
         $stmt = Database::getConnection()->prepare($sql);
@@ -137,7 +149,7 @@ class Venda
         return $stmt->fetchAll();
     }
 
-    public static function recentes(int $limite = 8, ?int $lojaId = null): array
+    public static function recentes(int $limite = 8, ?int $lojaId = null, ?int $usuarioId = null): array
     {
         $sql = 'SELECT v.*, u.nome AS usuario_nome, l.nome AS loja_nome
                 FROM vendas v
@@ -149,6 +161,11 @@ class Venda
         if ($lojaId !== null) {
             $sql .= ' AND v.loja_id = ?';
             $params[] = $lojaId;
+        }
+
+        if ($usuarioId !== null) {
+            $sql .= ' AND v.usuario_id = ?';
+            $params[] = $usuarioId;
         }
 
         $sql .= ' ORDER BY v.criado_em DESC LIMIT ' . (int) $limite;

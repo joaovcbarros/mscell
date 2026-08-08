@@ -13,7 +13,7 @@ class Usuario
 
     public static function todos(?int $lojaId = null): array
     {
-        $sql = 'SELECT u.id, u.nome, u.email, u.papel, u.loja_id, u.ativo, u.criado_em, l.nome AS loja_nome
+        $sql = 'SELECT u.id, u.nome, u.email, u.papel, u.loja_id, u.salario_base, u.ativo, u.criado_em, l.nome AS loja_nome
                 FROM usuarios u LEFT JOIN lojas l ON l.id = u.loja_id';
         $params = [];
 
@@ -33,7 +33,7 @@ class Usuario
     public static function buscarPorId(int $id): ?array
     {
         $stmt = Database::getConnection()->prepare(
-            'SELECT u.id, u.nome, u.email, u.papel, u.loja_id, u.ativo, u.criado_em, l.nome AS loja_nome
+            'SELECT u.id, u.nome, u.email, u.papel, u.loja_id, u.salario_base, u.ativo, u.criado_em, l.nome AS loja_nome
              FROM usuarios u LEFT JOIN lojas l ON l.id = u.loja_id
              WHERE u.id = ?'
         );
@@ -52,23 +52,23 @@ class Usuario
         return $stmt->fetch() ?: null;
     }
 
-    public static function criar(string $nome, string $email, string $senha, string $papel, ?int $lojaId): int
+    public static function criar(string $nome, string $email, string $senha, string $papel, ?int $lojaId, ?float $salarioBase = null): int
     {
         $stmt = Database::getConnection()->prepare(
-            'INSERT INTO usuarios (nome, email, senha_hash, papel, loja_id) VALUES (?, ?, ?, ?, ?)'
+            'INSERT INTO usuarios (nome, email, senha_hash, papel, loja_id, salario_base) VALUES (?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$nome, $email, password_hash($senha, PASSWORD_BCRYPT), $papel, $lojaId]);
+        $stmt->execute([$nome, $email, password_hash($senha, PASSWORD_BCRYPT), $papel, $lojaId, $salarioBase]);
 
         return (int) Database::getConnection()->lastInsertId();
     }
 
-    public static function atualizar(int $id, string $nome, string $email, string $papel, ?int $lojaId): bool
+    public static function atualizar(int $id, string $nome, string $email, string $papel, ?int $lojaId, ?float $salarioBase = null): bool
     {
         $stmt = Database::getConnection()->prepare(
-            'UPDATE usuarios SET nome = ?, email = ?, papel = ?, loja_id = ? WHERE id = ?'
+            'UPDATE usuarios SET nome = ?, email = ?, papel = ?, loja_id = ?, salario_base = ? WHERE id = ?'
         );
 
-        return $stmt->execute([$nome, $email, $papel, $lojaId, $id]);
+        return $stmt->execute([$nome, $email, $papel, $lojaId, $salarioBase, $id]);
     }
 
     public static function redefinirSenha(int $id, string $novaSenha): bool

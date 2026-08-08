@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 
 use MsCell\Models\Loja;
 use MsCell\Models\Produto;
+use MsCell\Models\Usuario;
 use MsCell\Services\AuthService;
 use MsCell\Services\VendaService;
 
@@ -46,6 +47,21 @@ if ($lojaId === null) {
     exit;
 }
 
+// Vendedor: quem recebe o credito da venda (usado no dashboard e na
+// bonificacao) — pode ser qualquer funcionario da loja, ou o proprio
+// usuario logado (inclusive o dono/admin, se for ele quem vende).
+// Diferente de "quem registrou", que e sempre o usuario logado de fato.
+$vendedoresDisponiveis = array_values(array_filter(
+    Usuario::todos($lojaId),
+    fn ($u) => $u['papel'] === Usuario::PAPEL_FUNCIONARIO
+));
+$usuarioAtual = Usuario::buscarPorId(AuthService::idAtual());
+if ($usuarioAtual && !in_array((int) $usuarioAtual['id'], array_column($vendedoresDisponiveis, 'id'), true)) {
+    $vendedoresDisponiveis[] = $usuarioAtual;
+}
+usort($vendedoresDisponiveis, fn ($a, $b) => strcmp($a['nome'], $b['nome']));
+$vendedorIdsValidos = array_column($vendedoresDisponiveis, 'id');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $produtoIds = $_POST['produto_id'] ?? [];
     $quantidades = $_POST['quantidade'] ?? [];
@@ -63,6 +79,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
     }
 
+    // Vendedor: so aceita um id que realmente esteja na lista de
+    // funcionarios/usuario atual dessa loja (evita atribuir a venda a
+    // alguem fora do escopo via requisicao adulterada).
+    $vendedorId = (int) ($_POST['vendedor_id'] ?? 0);
+    if (!in_array($vendedorId, $vendedorIdsValidos, true)) {
+        $vendedorId = AuthService::idAtual();
+    }
+
     try {
         if (empty($itens)) {
             throw new RuntimeException('Adicione pelo menos um item à venda.');
@@ -76,8 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             itens: $itens,
             formaPagamento: $_POST['forma_pagamento'] ?? 'outro',
             clienteNome: trim($_POST['cliente_nome'] ?? '') ?: null,
-            usuarioId: AuthService::idAtual(),
-            origem: 'sistema'
+            usuarioId: $vendedorId,
+            origem: 'sistema',
+            registradoPorId: AuthService::idAtual()
         );
 
         header('Location: /vendas/index.php?sucesso=1');
@@ -105,8 +130,15 @@ require __DIR__ . '/../partials/layout_start.php';
         <input type="hidden" name="loja_id" value="<?= (int) $lojaId ?>">
         <div class="row mb-3">
             <div class="col-md-6">
-                <label class="form-label">Cliente (opcional)</label>
-                <input type="text" name="cliente_nome" class="form-control">
+                <label class="form-label">Vendedor</label>
+                <select name="vendedor_id" class="form-select">
+                    <?php foreach ($vendedoresDisponiveis as $v): ?>
+                        <option value="<?= (int) $v['id'] ?>" <?= (int) $v['id'] === AuthService::idAtual() ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($v['nome']) ?><?= $v['papel'] === 'admin' ? ' (dono)' : '' ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="form-text">Quem recebe o crédito dessa venda (conta pra bonificação). Por padrão, você mesmo.</div>
             </div>
             <div class="col-md-6">
                 <label class="form-label">Forma de pagamento</label>
@@ -117,6 +149,12 @@ require __DIR__ . '/../partials/layout_start.php';
                     <option value="credito">Crédito</option>
                     <option value="outro">Outro</option>
                 </select>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Cliente (opcional)</label>
+                <input type="text" name="cliente_nome" class="form-control">
             </div>
         </div>
 

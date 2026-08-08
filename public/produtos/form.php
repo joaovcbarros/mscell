@@ -9,6 +9,8 @@ use MsCell\Services\ProdutoService;
 
 AuthService::exigirPapel(['admin', 'funcionario']);
 
+$podeVerCusto = AuthService::papelAtual() === 'admin';
+
 $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
 // Admin enxerga/edita produto de qualquer loja; funcionario so os da sua.
@@ -34,13 +36,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lojaId = (int) $produto['loja_id'];
     }
 
+    // Funcionario nao ve/envia preco de custo: preserva o valor que ja existia
+    // (edicao) ou fica 0 numa criacao nova, ate o admin completar depois.
+    $precoCusto = $podeVerCusto
+        ? str_replace(',', '.', $_POST['preco_custo'] ?? '0')
+        : (string) ($produto['preco_custo'] ?? 0);
+
     $dados = [
         'loja_id' => $lojaId,
         'nome' => trim($_POST['nome'] ?? ''),
         'apelidos' => trim($_POST['apelidos'] ?? '') ?: null,
         'categoria_id' => $_POST['categoria_id'] ?? null,
         'sku' => trim($_POST['sku'] ?? '') ?: null,
-        'preco_custo' => str_replace(',', '.', $_POST['preco_custo'] ?? '0'),
+        'preco_custo' => $precoCusto,
         'preco_venda' => str_replace(',', '.', $_POST['preco_venda'] ?? '0'),
         'quantidade_estoque' => $_POST['quantidade_estoque'] ?? 0,
         'estoque_minimo' => $_POST['estoque_minimo'] ?? 0,
@@ -130,12 +138,14 @@ require __DIR__ . '/../partials/layout_start.php';
             </div>
         </div>
         <div class="row">
+            <?php if ($podeVerCusto): ?>
             <div class="col-md-6 mb-3">
                 <label class="form-label">Preço de custo</label>
                 <input type="text" name="preco_custo" class="form-control" required
                        value="<?= htmlspecialchars((string) ($produto['preco_custo'] ?? '0')) ?>">
             </div>
-            <div class="col-md-6 mb-3">
+            <?php endif; ?>
+            <div class="<?= $podeVerCusto ? 'col-md-6' : 'col-md-12' ?> mb-3">
                 <label class="form-label">Preço de venda</label>
                 <input type="text" name="preco_venda" class="form-control" required
                        value="<?= htmlspecialchars((string) ($produto['preco_venda'] ?? '0')) ?>">
